@@ -5,7 +5,7 @@
 Repo utilizado para elaborar el trabajo para la asignatura “Programación
 y manejo de datos en la era del Big Data” de la Universitat de València
 durante el curso 2021-2022. La página web de la asignatura puede verse
-aquí: <https://perezp44.github.io/intro-ds-21-22-web/>.
+aquí: <https://alejandrouv.github.io/intro-ds-21-22-web/>.
 
 <!-- En la linea de abajo TIENES QUE SUSTITUIR "perezp44" por tu usuario de Github-->
 
