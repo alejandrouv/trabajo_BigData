@@ -1,8 +1,8 @@
 ---
-title: "Título-de-vuestro-trabajo"
-subtitle: "tu-nombre(tu-mail@alumni.uv.es)" #- pongo tú nombre ahí para q aparezca más grande q el de la UV
+title: "Analisis de la Educacion"
+subtitle: "Alejandro Perez Sanchiz(pesana2@alumni.uv.es)" #- pongo tú nombre ahí para q aparezca más grande q el de la UV
 author: "Universitat de València"
-date: "Diciembre de 2021 (actualizado el `r format(Sys.time(), '%d-%m-%Y')`)"
+date: "Enero de 2022 (actualizado el `r format(Sys.time(), '%d-%m-%Y')`)"
 output:
   html_document:
     #css: "./assets/my_css_file.css"
@@ -49,11 +49,26 @@ options("yaml.eval.expr" = TRUE)
 klippy::klippy(position = c("top", "right")) #- remotes::install_github("rlesur/klippy")
 ```
 
+```{r, include = FALSE}
+library(wbstats)
+library(tidyr)
+library(ggplot2)
+library(DT)
+library(gganimate)
+library(tidyverse)
+library(learningtower)
+library(plotly)
+```
+
+
+
+
+
 
 <hr class="linea-black">
 
 <!-- El párrafo de abajo has de dejarlo casi igual, solo HAS de SUSTITUIR "perezp44" por tu usuario de Github-->
-Trabajo elaborado para la asignatura "Programación y manejo de datos en la era del Big Data" de la Universitat de València durante el curso 2021-2022. El repo del trabajo está [aquí](https://github.com/perezp44/trabajo_BigData){target="_blank"}. 
+Trabajo elaborado para la asignatura "Programación y manejo de datos en la era del Big Data" de la Universitat de València durante el curso 2021-2022. El repo del trabajo está [aquí](https://github.com/alejandrouv/trabajo_BigData){target="_blank"}. 
 
 <!-- El párrafo de abajo has de dejarlo exactamente igual, NO HAS DE CAMBIAR NADA-->
 
@@ -62,88 +77,448 @@ La página web de la asignatura y los trabajos de mis compañeros pueden verse [
 
 <hr class="linea-red">
 
-# [1. Introducción]{.verdecito}
+# 1. Introducción
+
+Siempre hemos oido que la eduación era clave para nosotros. No solo para nuestro desarrollo personal, si no para mejorar nuestras condiciones de vida. Además, para los que hemos estudiado
+economía, tambien sabemos que la educacion es un aspecto clave del crecimiento economico. En este breve trabajo, analizaremos si de verdad nos merece la pena invertir en nosotros mismos a 
+través de la educacion, y también observaremos varios datos curiosos relacionados con la educación tales como el Informe Pisa.
+
+<br>
 
 
 
-La introducción **es una de las partes importantes del trabajo**. En la introducción suele ponerse el objetivo, motivación, un pequeño resumen del trabajo y avance de conclusiones si es que hay.
+# 2. Datos {.tabset}
 
-```{r, eval = TRUE}
-2 + 2
+## <FONT COLOR="d3a46a">**DATOS**</FONT>
+
+La mayoria de datos que he utilizado para elaborar el trabajo los he obtenido del paquete wbstats, es decir, que proceden de la base de datos del Banco Mundial. Además, para observar los datos del Informe Pisa, hemos utilizado el paquete learningtower, y, por último, para analizar la estructura salarial española por nivel de educación, nos descargarmos los datos en un excel desde el INE, y posteriormente los modificamos y representamos con R.
+
+<br>
+
+## <FONT COLOR="d3a46a">**EJEMPLO WBSTATS**</FONT>
+
+Primero de todo para obtener datos a través de wbstats hay que saber que datos queremos obtener, esto es, el indicador.
+Para saber el indicador, podemos realizar una busqueda de la siguiente forma:
+
+gdp <- wbsearch(pattern = "gdp", field = "indicator")
+
+Una vez hecho esto, podemos abrir el dataframe creado y filtrar que indicador queremos, en este ejemplo, filtraremos el pibpc en dolares constantes de 2011 para anular el efecto de la inflacion.
+
+
+Para obtener los datos  hariamos lo siguiente: wb(indicator = "6.0.GDPpc_constant",
+                          startdate = 2000, enddate = 2016, POSIXct = TRUE))
+                        
+Donde startdate y enddate son las fechas iniciales y finales respectivamente que queremos filtrar. Si queremos un país en concreto, podemos filtrar por país:
+
+wb(indicator = "6.0.GDPpc_constant",
+                country = "ESP",
+                  startdate = 2000, enddate = 2016, POSIXct = TRUE))
+
+De todos modos, en los apartados pondremos una sección de codigo para que se pueda observar el proceso de obtencion de datos, su modificacion y su representacion.
+
+# 3. "Curiosidades" 
+
+En este apartado vamos a comentar diversos datos curiosos e interesantes relacionados con la educacion en los diferentes paises del mundo, como las puntuaciones del Informe PISA y la inversion publica en educacion.
+
+## 3.1 Informe Pisa  {.tabset}
+
+### <FONT COLOR="d3a46a">**PISA**</FONT>
+
+A continuacion obtendremos los datos correspondientes a el Informe PISA y elaboraremos una tabla para poder consultar estos datos.
+
+```{r, echo=FALSE}
+library(learningtower)
+library(tidyr)
+library(ggplot2)
+library(DT)
+
+pisa_0018 <- load_student("all")
+
+pisa_0018_tabla <- pisa_0018 %>% select(year, country, math, read, science)
+
+pisa_prueba <- pisa_0018_tabla %>% group_by(year, country) %>% summarise(media_mat = mean(math, na.rm = TRUE), media_read = mean(read), media_sciencie = mean(science))
+
+
+pisa_prueba %>% DT::datatable(extensions = 'Buttons',
+                              filter = "top",
+                              options = list(dom = 'Blfrtip', 
+                                             buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), 
+                                             pageLength = 5, autoWidth = TRUE ))
+```
+En ella podemos consultar cualquier año, pais, categoria, etc. Por ejemplo vamos a consultar España en el año 2015. Podemos observar la media de las puntuaciones obtenidas por diferentes estudiantes para la categoria de matematicas, ciencia y lectura. Cabe destacar que los datos de esta tabla estan "arreglados", ya que al descargarse los datos originales tenemos la puntuacion de cada estudiante en cada materia, si dispone de ordenador, estudios de los progenitores, si dispone de TV en su habitacion, etc. Nosotros solo queriamos mostrar las puntuaciones finales, si se desea ahondar mas en estos datos tan interesantes lo dejamos en manos de nuestros lectores (las instrucciones estan disponibles en el apartado de codigo).
+
+
+
+También vamos a realizar un simple grafico para analizar la puntuacion media total (la media de las tres "asiganturas") a lo largo de los ultimos años de España, Alemania y EEUU.
+
+```{r, echo=FALSE}
+pisa_graf <- pisa_prueba
+
+pisa_graf$media_total_pisa <- apply(pisa_prueba[ ,c(3,4,5)], 1, mean, na.rm = TRUE)
+
+
+pisa_graf_graf <- pisa_graf %>% filter(country %in% c("ESP", "DEU", "USA"))
+
+
+graf_pis <- ggplot(pisa_graf_graf, aes(x = year, y = media_total_pisa, colour = country, group = country)) +
+                              geom_line() + geom_point()
+
+graf_pis
+```
+En el gráfico se puede observar como EEUU nos saca una gran ventaja a Alemania y España. Nosotros nos alternamos con Alemania, aunque estamos un mayor periodo de tiempo por arriba que los alemanes, cosa que parece que va a cambiar por la evolucion en los últimos años. Cabe destacar la gran caida de EEUU desde 2012, y una caida de España desde el mismo periodo aunque no tan pronunciada.
+
+
+
+### <FONT COLOR="d3a46a">**CODIGO**</FONT>
+
+```{r, eval = FALSE, include=TRUE}
+##inform pisa
+install.packages("learningtower")
+library(learningtower)
+library(tidyr)
+library(ggplot2)
+library(TD)
+
+#obtencion datos generales pisa
+
+pisa_0018 <- load_student("all")
+
+pisa_0018_tabla <- pisa_0018 %>% select(year, country, math, read, science)
+
+pisa_prueba <- pisa_0018_tabla %>% group_by(year, country) %>% summarise(media_mat = mean(math, na.rm = TRUE), media_read = mean(read), media_sciencie = mean(science))
+
+
+#Tabla Pisa
+
+library(DT)
+pisa_prueba %>% DT::datatable(extensions = 'Buttons',
+                              filter = "top",
+                              options = list(dom = 'Blfrtip', 
+                                             buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), 
+                                             pageLength = 5, autoWidth = TRUE ))
+
+#Grafico Pisa
+
+pisa_graf <- pisa_prueba
+
+pisa_graf$media_total_pisa <- apply(pisa_prueba[ ,c(3,4,5)], 1, mean, na.rm = TRUE)
+
+
+pisa_graf_graf <- pisa_graf %>% filter(country %in% c("ESP", "DEU", "USA"))
+
+
+graf_pis <- ggplot(pisa_graf_graf, aes(x = year, y = media_total_pisa, colour = country, group = country)) +
+                              geom_line() + geom_point()
+
+graf_pis
+```
+<br>
+
+## 3.2 Inversion en Educación  {.tabset}
+
+### <FONT COLOR="d3a46a">**INVERSION**</FONT>
+
+En este apartado vamos a centrarnos en la inversion publica en educacion de diferentes paises y  zonas del mundo. Los datos los obtendremos de la base de datos del banco mundial. Realizaremos una tabla donde se puede consultar por año y pais el % del PIB en educacion invertido.
+
+```{r, echo=FALSE}
+public_exp_ed<- wb(indicator =c("SE.XPD.TOTL.GD.ZS"),
+                   startdate = 2000, enddate = 2020, POSIXct = TRUE)
+
+
+public_exp_tab <- public_exp_ed %>% select(date, country, value)
+
+public_exp_tab %>% DT::datatable(extensions = 'Buttons',
+                                 filter = "top",
+                                 options = list(dom = 'Blfrtip', 
+                                                buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), 
+                                                pageLength = 5, autoWidth = TRUE ))
 ```
 
-Yo no usaría CSS, bastante trabajo tenéis, pero ... si usas CSS para tunear tu html podrás dejarlo más bonito, o al menos más a tu gusto. Por ejemplo, podrás fácilmente cambiar el tamaño de algunas palabras, por ejemplo, **[unas palabras en grande y en negrita]{.large}**, aunque si estas usando CSS saldrán en verde porque en el CSS he puesto que la negrita salga en verde. Por ejemplo, podrás poner fácilmente [unas palabras en purple]{.purple}, y ahora, [[en grande y en rojito]{.rojito}]{.large}.
 
-# 2. Datos
+A continucacion, tambien hemos realizado un "Bart Chart Race" básico para ver como ha evolucionado en los últimos años la inversion en educacion de diferentes zonas del mundo.
 
-Una parte **importante** del trabajo es explicar **de donde proceden los datos** y cual ha sido el proceso de limpieza
+```{r, echo=FALSE}
+public_exp_graf <- public_exp_ed %>% select(date, iso3c, country, value) %>% rename(pais = country, year = date) %>%
+  filter(iso3c %in% c("EUU", "EAS", "ECS", "SAS", "AFE", "AFW", "LCN")) %>% filter(year %in% c(2010:2018)) %>% group_by(pais) %>% arrange(value)
 
-```{r, eval = TRUE}
-ggplot(iris, aes(Sepal.Length, Petal.Length)) + geom_point()
+
+public_exp_graf$year <- as.numeric(public_exp_graf$year)
+
+
+grafico_animado_gdp <- ggplot(public_exp_graf, aes(x = pais, y = value, group = pais, fill = pais)) + geom_col() + coord_flip() + transition_time(year) + 
+  labs(title = 'Year: {frame_time}', x = 'IInversion Educacion como %GDP', y = 'Conjunto Paises') + theme(legend.position = "none")
+
+
+animate(grafico_animado_gdp,100,10)
+```
+Cabe destacar, sobre todo, que el este y el sur de Africa este, en general, a la cabeza o en los primeros puestos estos últimos años en lo que a inversion en educacion se refiere.
+
+### <FONT COLOR="d3a46a">**CODIGO**</FONT>
+
+```{r, eval = FALSE, include=TRUE}
+library(DT)
+library(wbstats)
+library(ggplot2)
+library(gganimate)
+library(tidyr)
+library(tidyverse)
+
+
+public_exp_ed<- wb(indicator =c("SE.XPD.TOTL.GD.ZS"),
+                   startdate = 2000, enddate = 2020, POSIXct = TRUE)
+
+
+public_exp_tab <- public_exp_ed %>% select(date, country, value)
+
+public_exp_tab %>% DT::datatable(extensions = 'Buttons',
+                                 filter = "top",
+                                 options = list(dom = 'Blfrtip', 
+                                                buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), 
+                                                pageLength = 5, autoWidth = TRUE ))
+
+
+
+public_exp_graf <- public_exp_ed %>% select(date, iso3c, country, value) %>% rename(pais = country, year = date) %>%
+  filter(iso3c %in% c("EUU", "EAS", "ECS", "SAS", "AFE", "AFW", "LCN")) %>% filter(year %in% c(2010:2018)) %>% group_by(pais) %>% arrange(value)
+
+public_exp_graf$year <- as.numeric(public_exp_graf$year)
+
+
+grafico_animado_gdp <- ggplot(public_exp_graf, aes(x = pais, y = value, group = pais, fill = pais)) + geom_col() + coord_flip() + transition_time(year) + 
+  labs(title = 'Year: {frame_time}', x = 'IInversion Educacion como %GDP', y = 'Conjunto Paises') + theme(legend.position = "none")
+
+
+animate(grafico_animado_gdp,100,10)
+
+```
+<br>
+
+
+
+# 4.Desempleo y Educación {.tabset}
+
+
+
+## <FONT COLOR="d3a46a">**DESEMPLEO**</FONT>
+
+A continuacion vamos a analizar si la tasa de desempleo guarda una relacion con la educación, concretamente con el nivel de estudios. Lo haremos gracias a la base de datos del Banco Mundial, y nos centraremos en los siguientes paises: Alemania, España y EEUU. Para ello realizaremos tres gráficos y un gráfico que integre los tres anteriores. En ellos se veran las distintas tasas de desempleo a lo largo del periodo 2000-2016 desagregadas por nivel de educación(En la leyenda, ADVN = Estudios avanzados, BASC = Estudios Basicoc, INTM = Estudios Intermedios).
+
+
+```{r, echo=FALSE}
+unemp_nivel_es <- wb(country = "ESP", 
+                     indicator =c("SL.UEM.BASC.ZS", "SL.UEM.INTM.ZS", "SL.UEM.ADVN.ZS"),
+                     startdate = 2000, enddate = 2016, POSIXct = TRUE)
+
+
+unemp_nivel_es <- unemp_nivel_es %>% select(date_ct, value, indicatorID) 
+
+
+graf_es_des <- ggplot(unemp_nivel_es, aes(x = date_ct ,y = value, color = indicatorID, group = indicatorID)) + geom_point() + geom_line() + theme(panel.background = element_rect(fill = "gray28",
+                                                                                                                                                                                  colour = "white"), plot.background = element_rect(fill = "aliceblue",
+                                                                                                                                                                                                                                    colour = "bisque")) +labs(title = "Desempleo por nivel de Estudios España",
+                                                                                                                                                                                                                                                              x = "Fecha", y = "Tasa Desempleo", colour = "Nivel de Estudios") + theme(panel.background = element_rect(fill = "antiquewhite")) 
+
+
+ggplotly(graf_es_des)
+
+
+
+#grafico desempleo por nivel de estudios, pais y año #EEUU
+
+unemp_nivel_US <- wb(country = "US", 
+                     indicator =c("SL.UEM.BASC.ZS", "SL.UEM.INTM.ZS", "SL.UEM.ADVN.ZS"),
+                     startdate = 2000, enddate = 2016, POSIXct = TRUE)
+
+
+unemp_nivel_US <- unemp_nivel_US %>% select(date_ct, value, indicatorID) 
+
+
+graf_US_des <- ggplot(unemp_nivel_US, aes(x = date_ct ,y = value, color = indicatorID, group = indicatorID)) + geom_point() + geom_line() + theme(panel.background = element_rect(fill = "gray28",
+                                                                                                                                                                                  colour = "white"), plot.background = element_rect(fill = "aliceblue",
+                                                                                                                                                                                                                                    colour = "bisque")) +labs(title = "Desempleo por nivel de Estudios EEUU",
+                                                                                                                                                                                                                                                              x = "Fecha", y = "Tasa Desempleo", colour = "Nivel de Estudios") + theme(panel.background = element_rect(fill = "antiquewhite")) 
+
+ggplotly(graf_US_des)
+
+#grafico desempleo por nivel de estudios, pais y año #ALEMANIA                                          
+
+unemp_nivel_DEU <- wb(country = "DEU", 
+                      indicator =c("SL.UEM.BASC.ZS", "SL.UEM.INTM.ZS", "SL.UEM.ADVN.ZS"),
+                      startdate = 2000, enddate = 2016, POSIXct = TRUE)
+
+
+unemp_nivel_DEU <- unemp_nivel_DEU %>% select(date_ct, value, indicatorID) 
+
+
+graf_DEU_des <- ggplot(unemp_nivel_DEU, aes(x = date_ct ,y = value, color = indicatorID, group = indicatorID)) + geom_point() + geom_line() + theme(panel.background = element_rect(fill = "gray28",
+                                                                                                                                                                                    colour = "white"), plot.background = element_rect(fill = "aliceblue",
+                                                                                                                                                                                                                                      colour = "bisque")) +labs(title = "Desempleo por nivel de Estudios ALEMANIA",
+                                                                                                                                                                                                                                                                x = "Fecha", y = "Tasa Desempleo", colour = "Nivel de Estudios") + theme(panel.background = element_rect(fill = "antiquewhite")) 
+
+ggplotly(graf_DEU_des)
+```
+En los tres paises se observa el mismo patron, la evolucion de la tasa de paro es muy similar, practicamente identica, pero lo curioso es lo siguiente, en los 3 paises, la tasa de desempleo es menos cuanto mayor es el nivel de estudios. Con lo cual, podemos afirmar, al menos para estos paises, que el desempleo esta relacionado inversamente con la educacion, a mayor nivel de estudios menor nivel de desempleo.
+
+
+A continuacion realizaremos el grafico "multiple" para poder apreciarlo mejor.
+
+```{r, echo=FALSE}
+unemp_nivel <- wb(country = c("DEU", "ESP", "US"), 
+                  indicator =c("SL.UEM.BASC.ZS", "SL.UEM.INTM.ZS", "SL.UEM.ADVN.ZS"),
+                  startdate = 2000, enddate = 2016, POSIXct = TRUE)
+
+des_tres_pais <- ggplot(unemp_nivel, aes(x = date_ct ,y = value, color = indicatorID, group = indicatorID)) + geom_point() + geom_line() + theme(panel.background = element_rect(fill = "gray28",
+                                                                                                                                                                                 colour = "white"), plot.background = element_rect(fill = "aliceblue",
+                                                                                                                                                                                                                                   colour = "bisque")) +labs(title = "Desempleo por nivel de Estudios",
+                                                                                                                                                                                                                                                             x = "Fecha", y = "Tasa Desempleo", colour = "Nivel de Estudios") + theme(panel.background = element_rect(fill = "antiquewhite")) +
+  facet_wrap(~country)
+
+des_tres_pais
+```
+En este grafico se aprecia aun mejor, la situacion comentada anteriormente se da en los 3 paises. Cabe destacar, por cierto, los altos niveles de desempleo españoles, pero esto es un tema aparte.
+
+## <FONT COLOR="d3a46a">**CODIGO**</FONT>
+
+```{r, eval = FALSE, include=TRUE}
+#grafico desempleo por nivel de estudios, pais y año #ESPAÑA
+
+unemp_nivel_es <- wb(country = "ESP", 
+                     indicator =c("SL.UEM.BASC.ZS", "SL.UEM.INTM.ZS", "SL.UEM.ADVN.ZS"),
+                     startdate = 2000, enddate = 2016, POSIXct = TRUE)
+
+
+unemp_nivel_es <- unemp_nivel_es %>% select(date_ct, value, indicatorID) 
+
+
+graf_es_des <- ggplot(unemp_nivel_es, aes(x = date_ct ,y = value, color = indicatorID, group = indicatorID)) + geom_point() + geom_line() + theme(panel.background = element_rect(fill = "gray28",
+                                                                                                                                                                                  colour = "white"), plot.background = element_rect(fill = "aliceblue",
+                                                                                                                                                                                                                                    colour = "bisque")) +labs(title = "Desempleo por nivel de Estudios ESPAÑA",
+                                                                                                                                                                                                                                                              x = "Fecha", y = "Tasa Desempleo", colour = "Nivel de Estudios") + theme(panel.background = element_rect(fill = "antiquewhite"))
+graf_es_des
+
+
+
+#grafico desempleo por nivel de estudios, pais y año #EEUU
+
+unemp_nivel_US <- wb(country = "US", 
+                     indicator =c("SL.UEM.BASC.ZS", "SL.UEM.INTM.ZS", "SL.UEM.ADVN.ZS"),
+                     startdate = 2000, enddate = 2016, POSIXct = TRUE)
+
+
+unemp_nivel_US <- unemp_nivel_US %>% select(date_ct, value, indicatorID) 
+
+
+graf_US_des <- ggplot(unemp_nivel_US, aes(x = date_ct ,y = value, color = indicatorID, group = indicatorID)) + geom_point() + geom_line() + theme(panel.background = element_rect(fill = "gray28",
+                                                                                                                                                                                  colour = "white"), plot.background = element_rect(fill = "aliceblue",
+                                                                                                                                                                                                                                    colour = "bisque")) +labs(title = "Desempleo por nivel de Estudios EEUU",
+                                                                                                                                                                                                                                                             x = "Fecha", y = "Tasa Desempleo", colour = "Nivel de Estudios") + theme(panel.background = element_rect(fill = "antiquewhite")) 
+graf_US_des
+
+#grafico desempleo por nivel de estudios, pais y año #ALEMANIA                                          
+
+unemp_nivel_DEU <- wb(country = "DEU", 
+                      indicator =c("SL.UEM.BASC.ZS", "SL.UEM.INTM.ZS", "SL.UEM.ADVN.ZS"),
+                      startdate = 2000, enddate = 2016, POSIXct = TRUE)
+
+
+unemp_nivel_DEU <- unemp_nivel_DEU %>% select(date_ct, value, indicatorID) 
+
+
+graf_DEU_des <- ggplot(unemp_nivel_DEU, aes(x = date_ct ,y = value, color = indicatorID, group = indicatorID)) + geom_point() + geom_line() + theme(panel.background = element_rect(fill = "gray28",
+                                                                                                                                                                                    colour = "white"), plot.background = element_rect(fill = "aliceblue",
+                                                                                                                                                                                                                                      colour = "bisque")) +labs(title = "Desempleo por nivel de Estudios ALEMANIA",
+                                                                                                                                                                                                                                                                x = "Fecha", y = "Tasa Desempleo", colour = "Nivel de Estudios") + theme(panel.background = element_rect(fill = "antiquewhite")) 
+
+graf_DEU_des
+
+
+#Combinacio graficos anteriores
+
+unemp_nivel <- wb(country = c("DEU", "ESP", "US"), 
+                  indicator =c("SL.UEM.BASC.ZS", "SL.UEM.INTM.ZS", "SL.UEM.ADVN.ZS"),
+                  startdate = 2000, enddate = 2016, POSIXct = TRUE)
+
+des_tres_pais <- ggplot(unemp_nivel, aes(x = date_ct ,y = value, color = indicatorID, group = indicatorID)) + geom_point() + geom_line() + theme(panel.background = element_rect(fill = "gray28",
+                                                                                                                                                                                 colour = "white"), plot.background = element_rect(fill = "aliceblue",
+                                                                                                                                                                                                                                   colour = "bisque")) +labs(title = "Desempleo por nivel de Estudios",
+                                                                                                                                                                                                                                                             x = "Fecha", y = "Tasa Desempleo", colour = "Nivel de Estudios") + theme(panel.background = element_rect(fill = "antiquewhite")) +
+  facet_wrap(~country)
+
+des_tres_pais
+```
+<br>
+
+# 5.Salarios y Educacion en España {.tabset}
+
+## <FONT COLOR="d3a46a">**SALARIOS**</FONT>
+
+Por último, vamos a analizar el salario por nivel de estudios gracias a los datos que nos proporciona el INE respecto a la estructura salarial. Para ello nos hemos descargado una hoja de excel del INE y la hemos importado a R para poder visualizarla. 
+
+```{r, echo=FALSE}
+library(plotly)
+
+salarios <- rio::import(here::here("datos", "Salarios_nivel_educacion.xlsx"))
+
+salarios <- salarios %>% select(`NIVELES DE FORMACION`, Periodo, Total) 
+
+salarios <- as.data.frame(salarios)
+
+salarios <- salarios %>% rename( Salario_bruto_mensual = Total, Fecha = Periodo, Nivel_Formacion = `NIVELES DE FORMACION`)
+
+
+
+graf_salarios <- ggplot(salarios, aes(x = Fecha, y = Salario_bruto_mensual, color = Nivel_Formacion, group = Nivel_Formacion))+ geom_line() + geom_point() + 
+  theme(plot.margin = unit (c(1,1,1,1), "cm")) +
+  theme(panel.background = element_rect(size = 1),
+    plot.background = element_rect(size = 0),
+    legend.position = "top", legend.direction = "horizontal")  + theme(panel.background = element_rect(fill = "gray81")) + theme(legend.position = "bottom") +labs(title = "Salario por nivel de educacion",
+    subtitle = "España, 2014/2020") + theme(legend.background = element_rect(fill = "gray93")) + theme(legend.position = "none")
+    
+
+ggplotly(graf_salarios)
+```
+Como observamos en el gráfico, pasa algo similar a lo comentado en el apartado del desempleo, a mayor nivel de estudios, mayor salario bruto mensual, siendo los mayores salarios para los estudios superiores y los menores para los analfabetos.
+
+## <FONT COLOR="d3a46a">**CODIGO**</FONT>
+
+```{r, eval = FALSE, include=TRUE}
+salarios <- rio::import(here::here("datos", "Salarios_nivel_educacion.xlsx"))
+
+salarios <- salarios %>% select(`NIVELES DE FORMACION`, Periodo, Total) 
+
+salarios <- as.data.frame(salarios)
+
+salarios <- salarios %>% rename( Salario_bruto_mensual = Total, Fecha = Periodo, Nivel_Formacion = `NIVELES DE FORMACION`)
+
+
+
+graf_salarios <- ggplot(salarios, aes(x = Fecha, y = Salario_bruto_mensual, color = Nivel_Formacion, group = Nivel_Formacion))+ geom_line() + geom_point() + 
+  theme(plot.margin = unit (c(1,1,1,1), "cm")) +
+  theme(panel.background = element_rect(size = 1),
+    plot.background = element_rect(size = 0),
+    legend.position = "top", legend.direction = "horizontal")  + theme(panel.background = element_rect(fill = "gray81")) + theme(legend.position = "bottom") +labs(title = "Salario por nivel de educacion",
+    subtitle = "España, 2014/2020") + theme(legend.background = element_rect(fill = "gray93"))
+    
+
+ggplotly(graf_salarios)
 ```
 
 
-## 2.1. Procesando los datos
-
-Pues eso que tenéis que contar (un poco) el procesado de datos
-
-```{r, eval = TRUE}
-DT::datatable(iris)
-```
-
-# 3. Trabajos en los que te has basado
-
-Es importante que, si habéis utilizado, os habéis basado/ayudado, de algún análisis previo de otro autor, lo digáis claramente.
-
-Por ejemplo, está cita es de NV
-
-> "Nadie llega tan lejos si no es para seguir"
 
 
+# 6. Conclusion
+
+A traves del breve trabajo realizado, he llegado a la conclusion de que desde el punto de vista personal, nos merece la pena y mucho invertir en nosotros mismos a través de la educación, ya que, como vimos en los apartados 4 y 5, un mayor nivel de educacion (entendida como un mayor nivel de estudios) nos proporciona una mayor probabilidad de encontrar empleo y además con un salario mayor en comparacion con otros individuos con menor nivel de estudios. Podemos afirmar, sin ninguna duda, que invertir en nuestra educacion es muy rentable.
 
 
-# 4. RECUERDA!!!
+# 7. Bibliografía
 
+[Estructura salarial](https://rpubs.com/joscani/esalarial)
 
-<div class = "caja-medium-aquamarine">
-Recuerda que **tienes que mandarme un mail** con tu nombre, usuario de Github y nombre de tu trabajo 
-</div>
+[Datos wbstats](https://finanzaszone.com/paquetes-descargar-datos-r/)
 
-<br>
+[Bart Chart Race](https://michaeltoth.me/how-to-create-a-bar-chart-race-in-r-mapping-united-states-city-population-1790-2010.html)
 
-<div class = "caja-crimson">
-Recuerda que el repo de Github **se ha de llamar EXACTAMENTE** "trabajo_BigData"  
-</div>
-
-<br>
-
-<div class = "caja-darkkhaki">
-Por favor, **no cambies el primer párrafo**. Sirve para dar contexto al trabajo y remitir a los potenciales lectores a la web del curso y poder ver los otros trabajos. Bueno, si que has de cambiar algo: **has de sutituir "perezp44" por tu usuario de Github**, tanto en el archivo index.Rmd como en el Readme.Rmd
-</div>
-
-
-<br>
-
-<div class = "caja-linea-verde">
-R️ecuerda, el 7 de enero fecha límite para la entrega.
-</div>
-
-
-<br>
-
-<hr class="linea-red">
-
-
-<div class = "caja-gris-gainboro">
-SUERTE!!!!  🧙‍♀️🧙‍♀️
-</div>
-
-
-<br>
-
-# 4. Bibliografía
-
-No tienen porque ser artículos o libros; pueden ser posts, repos de Github, paquetes etc ...
 
 <br><br>
 
